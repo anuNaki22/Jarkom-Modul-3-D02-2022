@@ -591,3 +591,168 @@ cp /root/dhcpd7.conf /etc/dhcp/dhcpd.conf
 service isc-dhcp-server restart
 ```
 Hal itu menyebabkan IP fixed address pada node Eden yang memiliki interface eth0 berubah menjadi `10.16.3.13/24`
+
+##Proxy Server
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+SSS, Garden, dan Eden digunakan sebagai client Proxy agar pertukaran informasi dapat terjamin keamanannya, juga untuk mencegah kebocoran data.
+Untuk menggunakan Proxy diperlukan untuk mengkonfigurasi proxy terlebih dahulu
+
+###Konfigurasi Proxy
+####Berlint berfungsi sebagai proxy server
+Pertama kita membuat backup file config dengan
+```
+mv /etc/squid/squid.conf /etc/squid/squid.conf.bak
+```
+Pada file /etc/squid/squid.conf tambah kan
+```
+http_port 8080
+visible_hostname Berlint
+```
+Lalu restart dengan
+```
+service squid restart
+```
+
+####Pembatasan Waktu Akses
+Client hanya dapat mengakses internet di luar hari dan jam kerja (senin-jumat 08:00 - 17:00) dan hari libur (dapat mengakses 24 jam penuh)
+
+Tambahkan file acl.conf
+```
+nano /etc/squid/acl.conf
+```
+lalu tambah kan
+```
+acl UNAVAILABLE_WORKING time MTWHF 08:00-17:00
+```
+
+Pada squid.conf tambahkan
+```
+include /etc/squid/acl.conf
+http_port 8080
+http_access deny UNAVAILABLE_WORKING
+http_access allow all
+visible_hostname Berlint
+```
+Lalu restart squid
+
+####Pembatasan Akses Website
+client hanya dapat mengakses domain loid-work.com dan franky-work.com (IP tujuan domain dibebaskan). Saat akses internet dibuka, client dilarang untuk mengakses web tanpa HTTPS. (Contoh web HTTP: http://example.com)
+
+#####Pada WISE
+ubah config dengan
+```
+nano /etc/bind/named.conf.local
+```
+Lalu tambahkan
+```
+zone "loid-work.com" {
+  type master;
+  file "/etc/bind/jarkom/loid-work.com";
+};
+
+zone "franky-work.com" {
+  type master;
+  file "/etc/bind/jarkom/franky-work.com";
+};
+```
+
+Setelah itu, buat folder baru bernama "jarkom" pada bind
+```
+mkdir /etc/bind/jarkom/  
+```
+buat file 
+```
+nano /etc/bind/jarkom/loid-work.com
+```
+
+Lalu Tambahkan 
+```
+$TTL 604800
+@ IN SOA loid-work.com. root.loid-work.com. (
+                20211108 ; Serial
+                604800 ; Refresh
+                86400 ; Retry
+                2419200 ; Expire
+                604800 ) ; Negative Cache TTL
+;
+@ IN NS loid-work.com.
+@ IN A 10.16.2.3
+@ IN AAAA ::1
+www IN CNAME loid-work.com.
+```
+
+Buat file lagi untuk franky-work.com
+```
+nano /etc/bind/jarkom/franky-work.com
+```
+
+Tambahkan
+
+```
+$TTL 604800
+@ IN SOA franky-work.com. root.franky-work.com. (
+                20211108 ; Serial
+                604800 ; Refresh
+                86400 ; Retry
+                2419200 ; Expire
+                604800 ) ; Negative Cache TTL
+;
+@ IN NS franky-work.com.
+@ IN A 10.16.2.3
+@ IN AAAA ::1
+www IN CNAME franky-work.com.
+```
+
+Usai menambahkan file diatas, kita tambahkan konfigurasi squid pada Berlint
+dengan menambahkan
+```
+http_port 5000
+visible_hostname loid-work.com
+visible_hostname franky-work.com
+http_access allow all
+```
+
+Lalu restart squid service
+
+####Pembatasan Bandwith
+Agar menghemat penggunaan, akses internet dibatasi dengan kecepatan maksimum 128 Kbps pada setiap host (Kbps = kilobit per second; lakukan pengecekan pada tiap host, 
+ketika 2 host akses internet pada saat bersamaan, keduanya mendapatkan speed maksimal yaitu 128 Kbps)
+
+Membuat file baru pada Berlint dengan
+```
+nano /etc/squid/acl-bandwidth.conf
+```
+lalu masukan
+```
+delay_pools 2
+delay_class 1 1
+delay_class 1 2
+delay_access 1 allow all
+delay_access 2 allow all
+delay_parameters 2 128000/128000 128000/128000
+```
+Setelah itu tambahkan pada squid config
+```
+include /etc/squid/acl-bandwidth.conf
+```
+hasil akhir config squid pada berlint berupa
+
+![image](https://user-images.githubusercontent.com/82019030/201510001-5c22325f-3227-433a-b9ed-0b0b73a70a34.png)
+
+Lalu dapat mengecek proxy server melalui SSS, Garden, dan Eden dengan
+```
+export http_proxy="http://10.16.2.3:8080"
+```
+
+serta env | grep -i proxy
+![image](https://user-images.githubusercontent.com/82019030/201510078-bd409298-fb25-4eff-8727-bb3469215dfe.png)
+
+
+
+
+
+
+
+
+
+
