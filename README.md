@@ -592,13 +592,13 @@ service isc-dhcp-server restart
 ```
 Hal itu menyebabkan IP fixed address pada node Eden yang memiliki interface eth0 berubah menjadi `10.16.3.13/24`
 
-##Proxy Server
+## Proxy Server
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 SSS, Garden, dan Eden digunakan sebagai client Proxy agar pertukaran informasi dapat terjamin keamanannya, juga untuk mencegah kebocoran data.
 Untuk menggunakan Proxy diperlukan untuk mengkonfigurasi proxy terlebih dahulu
 
-###Konfigurasi Proxy
-####Berlint berfungsi sebagai proxy server
+### Konfigurasi Proxy
+#### Berlint berfungsi sebagai proxy server
 Pertama kita membuat backup file config dengan
 ```
 mv /etc/squid/squid.conf /etc/squid/squid.conf.bak
@@ -613,7 +613,7 @@ Lalu restart dengan
 service squid restart
 ```
 
-####Pembatasan Waktu Akses
+#### Pembatasan Waktu Akses
 Client hanya dapat mengakses internet di luar hari dan jam kerja (senin-jumat 08:00 - 17:00) dan hari libur (dapat mengakses 24 jam penuh)
 
 Tambahkan file acl.conf
@@ -635,10 +635,10 @@ visible_hostname Berlint
 ```
 Lalu restart squid
 
-####Pembatasan Akses Website
+#### Pembatasan Akses Website
 client hanya dapat mengakses domain loid-work.com dan franky-work.com (IP tujuan domain dibebaskan). Saat akses internet dibuka, client dilarang untuk mengakses web tanpa HTTPS. (Contoh web HTTP: http://example.com)
 
-#####Pada WISE
+##### Pada WISE
 ubah config dengan
 ```
 nano /etc/bind/named.conf.local
@@ -714,7 +714,7 @@ http_access allow all
 
 Lalu restart squid service
 
-####Pembatasan Bandwith
+#### Pembatasan Bandwith
 Agar menghemat penggunaan, akses internet dibatasi dengan kecepatan maksimum 128 Kbps pada setiap host (Kbps = kilobit per second; lakukan pengecekan pada tiap host, 
 ketika 2 host akses internet pada saat bersamaan, keduanya mendapatkan speed maksimal yaitu 128 Kbps)
 
